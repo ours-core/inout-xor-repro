@@ -1,0 +1,21 @@
+[package]
+name = "inout-xor-repro"
+version = "0.1.0"
+edition = "2024"
+license = "MIT-0"
+publish = false
+
+[dependencies]
+aes = "0.9"
+ctr = "0.10"
+
+# What a size-sensitive binary ships with: fat LTO at "s".
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = "s"
+
+# The same at opt-level 3.
+[profile.release-o3]
+inherits = "release"
+opt-level = 3
