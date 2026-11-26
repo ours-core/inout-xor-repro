@@ -26,7 +26,7 @@ It first asserts that both produce the same bytes.
 
 ## Results
 
-AMD EPYC 9554 (Zen 4, VAES), one core, `rustc 1.100.0` (pinned in `rust-toolchain.toml`):
+AMD EPYC 9554 (Zen 4, VAES), one core, `rustc 1.100.0` (pinned in `rust-toolchain.toml`; 1.99.1 gives the same picture):
 
 | profile | `apply_keystream` | by words | ratio |
 |---|---|---|---|
