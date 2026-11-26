@@ -12,6 +12,7 @@ Versions (see `Cargo.lock`): `inout` 0.2.6, `cipher` 0.5.2, `ctr` 0.10.1, `aes` 
 ```
 cargo run --locked --profile release      # fat LTO, codegen-units = 1, opt-level = "s"
 cargo run --locked --profile release-o3   # the same at opt-level = 3
+cargo run --locked --profile release-hot  # "s", with only the cipher crates and the caller at 3
 ```
 
 The program encrypts 1 GiB in 16 KiB pieces with `ctr::Ctr128BE<aes::Aes256>` two ways and
@@ -25,21 +26,20 @@ It first asserts that both produce the same bytes.
 
 ## Results
 
-AMD EPYC 9554 (Zen 4, VAES), one core, `rustc 1.99.1`:
+AMD EPYC 9554 (Zen 4, VAES), one core, `rustc 1.100.0` (pinned in `rust-toolchain.toml`):
 
 | profile | `apply_keystream` | by words | ratio |
 |---|---|---|---|
-| `opt-level = "s"`, fat LTO | 1.20 GB/s | 3.78 GB/s | 3.1× |
-| `opt-level = 3`, fat LTO | 5.88 GB/s | 8.28 GB/s | 1.4× |
+| `opt-level = "s"`, fat LTO | 1.19 GB/s | 3.96 GB/s | 3.3× |
+| `opt-level = 3`, fat LTO | 5.79 GB/s | 8.29 GB/s | 1.4× |
 
-Raising only `aes`, `ctr`, `cipher`, `hybrid-array` and the caller to `opt-level = 3` in
-`[profile.release.package]` brings `apply_keystream` back to about 6 GB/s in this example, with or
-without `inout` itself raised. We saw the byte-wise loop in a larger fat-LTO binary configured that
+The `release-hot` profile raises only `aes`, `ctr`, `cipher`, `hybrid-array` and the caller to
+`opt-level = 3` (not `inout`), and brings `apply_keystream` back to 6.01 GB/s (by words: 8.28 GB/s). We saw the byte-wise loop in a larger fat-LTO binary configured that
 way too, but have not reduced that case to a minimal example yet.
 
 ## Where the time goes at `opt-level = "s"`
 
-The two hottest instructions in `perf`, about 44% of all samples together, are the inner loop of
+The two hottest instructions in `perf`, about 53% of all samples together, are the inner loop of
 `xor_in2out` inlined into the CTR backend:
 
 ```
@@ -51,7 +51,7 @@ cmp    $0x10,%rdi
 jne    ...
 ```
 
-AES itself (`vaesenc` on zmm) takes about 19%. The XOR by words compiles to `xorps` at the same
+AES itself (`vaesenc` on zmm) takes about 21%. The XOR by words compiles to `xorps` at the same
 `opt-level = "s"`.
 
 The function copies the input into a temporary `Array`, XORs it byte by byte and writes the

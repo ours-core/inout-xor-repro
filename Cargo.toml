@@ -19,3 +19,15 @@ opt-level = "s"
 [profile.release-o3]
 inherits = "release"
 opt-level = 3
+
+# Only the cipher crates and the caller raised to 3, as a size-sensitive binary would do for its
+# hot path.
+[profile.release-hot]
+inherits = "release"
+
+[profile.release-hot.package]
+aes = { opt-level = 3 }
+ctr = { opt-level = 3 }
+cipher = { opt-level = 3 }
+hybrid-array = { opt-level = 3 }
+inout-xor-repro = { opt-level = 3 }
